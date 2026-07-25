@@ -11,10 +11,16 @@ import type {
  * at build time (NEXT_PUBLIC_TMDB_TOKEN) — a deliberate, accepted exposure:
  * it's a read-only public-data token and this site has no server.
  */
-const API_BASE = "https://api.themoviedb.org/3";
+// api.tmdb.org (not api.themoviedb.org): same official API, but the
+// themoviedb.org domain is blocked by some ISPs (notably in India).
+const API_BASE = "https://api.tmdb.org/3";
 const IMAGE_BASE = "https://image.tmdb.org/t/p";
 
 const TOKEN = process.env.NEXT_PUBLIC_TMDB_TOKEN;
+
+/** v4 read tokens are JWTs (dotted, long); v3 API keys are 32-char hex.
+    Accept both: v4 goes in the Authorization header, v3 as ?api_key=. */
+const IS_V4_TOKEN = Boolean(TOKEN?.includes("."));
 
 export type TmdbErrorKind = "no-token" | "bad-key" | "rate-limited" | "network";
 
@@ -40,10 +46,14 @@ async function tmdbFetch<T>(path: string, params: Params = {}): Promise<T> {
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined) url.searchParams.set(k, String(v));
   }
+  if (!IS_V4_TOKEN) url.searchParams.set("api_key", TOKEN);
 
   const attempt = () =>
     fetch(url, {
-      headers: { Authorization: `Bearer ${TOKEN}`, Accept: "application/json" },
+      headers: {
+        ...(IS_V4_TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}),
+        Accept: "application/json",
+      },
       // A hung network must resolve to the error state, not an endless spinner.
       signal: AbortSignal.timeout(12_000),
     });
