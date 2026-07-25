@@ -1,0 +1,55 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # 22+ required: the build script's --no-experimental-webstorage
+          # flag doesn't exist on older Node and fails NODE_OPTIONS parsing.
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # Fail fast if the TMDB secret is missing — a build without it ships
+      # a site that can't fetch a single title.
+      - name: Check TMDB token is present
+        run: '[ -n "$NEXT_PUBLIC_TMDB_TOKEN" ] || { echo "::error::NEXT_PUBLIC_TMDB_TOKEN secret is not set"; exit 1; }'
+        env:
+          NEXT_PUBLIC_TMDB_TOKEN: ${{ secrets.NEXT_PUBLIC_TMDB_TOKEN }}
+
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_TMDB_TOKEN: ${{ secrets.NEXT_PUBLIC_TMDB_TOKEN }}
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

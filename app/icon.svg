@@ -1,0 +1,15 @@
+<!-- Family mark (logo/tool-violet.svg): Bar A parent indigo, Bar B violet
+     (this tool's claimed accent). Keep in sync with components/ui/Mark.tsx. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <clipPath id="barA"><rect x="30" y="50" width="114" height="38" rx="11"/></clipPath>
+    <clipPath id="barB"><rect x="56" y="112" width="114" height="38" rx="11"/></clipPath>
+  </defs>
+  <rect width="200" height="200" rx="40" fill="#FAFAF9"/>
+  <g transform="rotate(-45 100 100)">
+    <rect x="30" y="50" width="114" height="38" rx="11" fill="#4F46E5"/>
+    <polygon points="118,50 144,50 144,88 128,88" clip-path="url(#barA)" fill="#3730A3"/>
+    <rect x="56" y="112" width="114" height="38" rx="11" fill="#7C3AED"/>
+    <polygon points="82,150 56,150 56,112 72,112" clip-path="url(#barB)" fill="#5B21B6"/>
+  </g>
+</svg>
