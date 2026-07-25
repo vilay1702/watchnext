@@ -70,6 +70,11 @@ export const copy = {
   exhaustedBody:
     "Here are the best of them again — or start over and try a different vibe.",
 
+  // History
+  historyTitle: "Recent picks",
+  historyEmpty: "Your recent picks will show up here.",
+  clearHistory: "Clear history",
+
   // Header actions
   themeToggle: "Switch between light and dark",
 

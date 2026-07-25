@@ -27,9 +27,10 @@ export default function PrivacyPage() {
 
       <StaticSection heading="What's stored, and where">
         <p>
-          {TOOL_NAME} saves three things in your browser’s local storage:
+          {TOOL_NAME} saves four things in your browser’s local storage:
           titles you’ve marked “Seen it” or “Not interested” (so they’re never
-          suggested again), your streaming region, and your light-or-dark
+          suggested again), your recent picks (so you can find that movie
+          from last week), your streaming region, and your light-or-dark
           theme choice.
         </p>
         <p>
@@ -57,8 +58,9 @@ export default function PrivacyPage() {
 
       <StaticSection heading="Clearing your data">
         <p>
-          Clear this site’s data in your browser settings to remove everything
-          at once. Gone means gone — there’s no copy anywhere else.
+          Use “Clear history” to empty your recent picks, or clear this
+          site’s data in your browser settings to remove everything at once.
+          Gone means gone — there’s no copy anywhere else.
         </p>
       </StaticSection>
     </StaticPage>

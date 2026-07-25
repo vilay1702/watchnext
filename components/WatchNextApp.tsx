@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   Answers,
   Excluded,
+  HistoryRecord,
   RegionProviders,
   Title,
   TitleDetails,
@@ -23,11 +24,13 @@ import { Button } from "@/components/ui/Button";
 import { MoodPicker } from "@/components/MoodPicker";
 import { ResultHero } from "@/components/ResultHero";
 import { BackupRow } from "@/components/BackupRow";
+import { HistoryPanel } from "@/components/HistoryPanel";
 
 type Phase = "picking" | "loading" | "results" | "error";
 
 /** Titles excluded forever are FIFO-capped so storage can't grow unbounded. */
 const EXCLUDED_CAP = 500;
+const HISTORY_LIMIT = 50;
 
 const cap = (list: string[]) => list.slice(-EXCLUDED_CAP);
 
@@ -47,6 +50,10 @@ export function WatchNextApp() {
   const [storedRegion, setStoredRegion] = useLocalStorage<string | null>(
     "wn:region:v1",
     null,
+  );
+  const [history, setHistory] = useLocalStorage<HistoryRecord[]>(
+    "wn:history:v1",
+    [],
   );
   const [detectedRegion, setDetectedRegion] = useState("US");
   useEffect(() => setDetectedRegion(detectRegion()), []);
@@ -203,6 +210,29 @@ export function WatchNextApp() {
     setPhase("picking");
   }, []);
 
+  // Every hero shown lands in the persisted history (newest first, deduped,
+  // capped). Keyed on the hero so promote/re-pick paths all record.
+  const heroKey = picks?.hero.key;
+  useEffect(() => {
+    if (!picks) return;
+    const h = picks.hero;
+    setHistory((prev) => {
+      if (prev[0]?.key === h.key) return prev;
+      return [
+        {
+          key: h.key,
+          name: h.name,
+          year: h.year,
+          mediaType: h.mediaType,
+          posterPath: h.posterPath,
+          at: Date.now(),
+        },
+        ...prev.filter((r) => r.key !== h.key),
+      ].slice(0, HISTORY_LIMIT);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [heroKey, setHistory]);
+
   // Lazy enrichment: details for every displayed title (runtime / seasons),
   // providers for the active region. Caches make repeat views free.
   const displayed = picks ? [picks.hero, ...picks.backups] : [];
@@ -257,7 +287,19 @@ export function WatchNextApp() {
     );
   }
 
-  if (phase === "picking") return <MoodPicker onComplete={start} />;
+  const historyPanel = history.length > 0 && (
+    <div className="mt-10 border-t border-border pt-5">
+      <HistoryPanel history={history} onClear={() => setHistory([])} />
+    </div>
+  );
+
+  if (phase === "picking")
+    return (
+      <div>
+        <MoodPicker onComplete={start} />
+        {historyPanel}
+      </div>
+    );
 
   if (phase === "loading") {
     return (
@@ -347,6 +389,8 @@ export function WatchNextApp() {
           </Button>
         </div>
       )}
+
+      {historyPanel}
 
       <p className="mt-8 border-t border-border pt-3 text-[11px] leading-4 text-text-muted">
         {copy.tmdbAttribution}

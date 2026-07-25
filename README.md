@@ -28,8 +28,8 @@ shortlist, WatchNext says so instead of repeating itself silently.
 
 ## Privacy
 
-Everything runs in your browser. Your answers and your seen-list are stored
-locally and never uploaded. Your browser talks directly to TMDB’s public API
+Everything runs in your browser. Your answers, your seen-list, and your
+recent picks are stored locally and never uploaded. Your browser talks directly to TMDB’s public API
 to fetch titles — those requests carry your chosen filters, never your
 identity. No accounts, no trackers, no cookies.
 

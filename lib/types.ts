@@ -57,3 +57,13 @@ export interface Excluded {
   seen: string[];
   dismissed: string[];
 }
+
+/** Persisted under wn:history:v1 — heroes shown to the user, newest first. */
+export interface HistoryRecord {
+  key: string;
+  name: string;
+  year: number | null;
+  mediaType: MediaType;
+  posterPath: string | null;
+  at: number; // epoch ms
+}
