@@ -74,7 +74,7 @@ export const copy = {
   // Preferences
   preferencesTitle: "Preferences",
   preferencesSummary: (n: number) =>
-    n === 0 ? "Any service, any language" : `${n} set`,
+    n === 0 ? "Any service · English" : `${n} set`,
   servicesLabel: "Only my streaming services",
   servicesHint:
     "Pick the services you pay for and every suggestion will be watchable on one of them.",

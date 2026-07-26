@@ -61,9 +61,10 @@ export function WatchNextApp() {
     "wn:services:v1",
     [],
   );
+  // Defaults to English; "Any language" is an explicit choice.
   const [language, setLanguage] = useLocalStorage<string | null>(
     "wn:lang:v1",
-    null,
+    "en",
   );
   const [detectedRegion, setDetectedRegion] = useState("US");
   useEffect(() => setDetectedRegion(detectRegion()), []);

@@ -49,7 +49,8 @@ export function PreferencesPanel({
     };
   }, [open, region]);
 
-  const setCount = services.length + (language ? 1 : 0);
+  // English is the default — only deviations count as "set".
+  const setCount = services.length + (language !== "en" ? 1 : 0);
 
   const toggle = (id: number) =>
     onServicesChange(
