@@ -1,7 +1,7 @@
-import type { Answers, Title } from "./types";
+import type { Answers, Prefs, Title } from "./types";
 import { discover } from "./tmdb";
 import { compileQueries, MAX_RELAX_LEVEL } from "./moods";
-import { scoreTitle } from "./scoring";
+import { scoreTitle, type ScoreContext } from "./scoring";
 
 /**
  * Pool building + selection. Deterministic rules, random only within a
@@ -24,21 +24,29 @@ export interface BuiltPool {
 /**
  * Fetch, dedupe, and score the candidate pool for a set of answers,
  * walking the relaxation ladder until enough selectable titles exist.
+ * `recentKeys` (titles shown in the last two weeks) are de-prioritized
+ * in scoring, never excluded.
  */
 export async function buildPool(
   answers: Answers,
   excluded: Set<string>,
+  prefs: Prefs,
+  recentKeys: Set<string>,
 ): Promise<BuiltPool> {
-  const currentYear = new Date().getFullYear();
+  const ctx: ScoreContext = {
+    currentYear: new Date().getFullYear(),
+    mood: answers.mood,
+    recentKeys,
+  };
   const byKey = new Map<string, Title>();
 
   let relax = 0;
   for (;;) {
-    const plan = compileQueries(answers, relax);
+    const plan = compileQueries(answers, relax, prefs);
     let firstError: unknown = null;
     const batches = await Promise.all(
       plan.queries.map((q) =>
-        discover(plan.media, q.params, q.fromDateBlend).catch((e) => {
+        discover(plan.media, q.params, q.bonus).catch((e) => {
           firstError ??= e;
           return [] as Title[];
         }),
@@ -51,8 +59,8 @@ export async function buildPool(
     for (const batch of batches) {
       for (const t of batch) {
         const existing = byKey.get(t.key);
-        // A date-blend duplicate upgrades the stored copy (keeps the bonus).
-        if (!existing || (t.fromDateBlend && !existing.fromDateBlend)) {
+        // A bonus-query duplicate upgrades the stored copy (keeps the bonus).
+        if (!existing || t.poolBonus > existing.poolBonus) {
           byKey.set(t.key, t);
         }
       }
@@ -63,7 +71,7 @@ export async function buildPool(
     );
     if (selectable.length >= POOL_TARGET || relax >= MAX_RELAX_LEVEL) {
       const titles = selectable
-        .map((t) => ({ ...t, score: scoreTitle(t, currentYear) }))
+        .map((t) => ({ ...t, score: scoreTitle(t, ctx) }))
         .sort((a, b) => b.score - a.score);
       return { titles, relaxLevel: relax };
     }
@@ -76,18 +84,27 @@ export interface Picks {
   backups: Title[];
 }
 
-function sample<T>(arr: T[], n: number): T[] {
+function shuffle<T>(arr: T[]): T[] {
   const copy = [...arr];
   for (let i = copy.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
-  return copy.slice(0, n);
+  return copy;
+}
+
+function genreOverlap(a: Title, b: Title): number {
+  if (a.genreIds.length === 0 || b.genreIds.length === 0) return 0;
+  const setB = new Set(b.genreIds);
+  const shared = a.genreIds.filter((g) => setB.has(g)).length;
+  return shared / new Set([...a.genreIds, ...b.genreIds]).size;
 }
 
 /**
  * Draw a hero + backups from the pool: hero at random from the top
- * HERO_SLICE of the not-yet-shown top slice, backups from the rest.
+ * HERO_SLICE of the not-yet-shown top slice; backups chosen greedily to
+ * DIFFER from the hero and each other (least genre overlap), so the row
+ * offers real alternatives instead of three near-identical picks.
  * Returns null when the pool is exhausted for this session.
  */
 export function pickTitles(
@@ -101,10 +118,25 @@ export function pickTitles(
   if (candidates.length === 0) return null;
 
   const slice = candidates.slice(0, TOP_SLICE);
-  const [hero] = sample(slice.slice(0, HERO_SLICE), 1);
-  const backups = sample(
-    slice.filter((t) => t.key !== hero.key),
-    BACKUP_COUNT,
-  );
+  const [hero] = shuffle(slice.slice(0, HERO_SLICE));
+
+  const backups: Title[] = [];
+  let rest = shuffle(slice.filter((t) => t.key !== hero.key));
+  while (backups.length < BACKUP_COUNT && rest.length > 0) {
+    let best = rest[0];
+    let bestOverlap = Infinity;
+    for (const t of rest) {
+      const overlap = [hero, ...backups].reduce(
+        (sum, picked) => sum + genreOverlap(t, picked),
+        0,
+      );
+      if (overlap < bestOverlap) {
+        bestOverlap = overlap;
+        best = t;
+      }
+    }
+    backups.push(best);
+    rest = rest.filter((t) => t.key !== best.key);
+  }
   return { hero, backups };
 }

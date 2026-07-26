@@ -1,4 +1,4 @@
-import type { Title } from "./types";
+import type { Mood, Title } from "./types";
 
 /**
  * IMDb-style weighted rating: pulls titles with few votes toward the global
@@ -8,17 +8,36 @@ import type { Title } from "./types";
 const GLOBAL_MEAN = 6.9;
 const MIN_VOTES = { movie: 500, tv: 250 } as const;
 
-const DATE_BLEND_BONUS = 0.3;
-const RECENCY_BONUS = 0.2;
+/** How much being new is worth depends on the mood: escapism and comedy
+    date fast; the best mind-benders are decades old. */
+const RECENCY_BONUS: Record<Mood, number> = {
+  laugh: 0.2,
+  thrill: 0.1,
+  feel: 0.05,
+  think: 0,
+  escape: 0.2,
+  scare: 0.15,
+};
 const RECENCY_WINDOW_YEARS = 3;
 
-export function scoreTitle(title: Title, currentYear: number): number {
+/** Shown within the last two weeks — de-prioritized, never excluded. */
+const RECENTLY_SHOWN_PENALTY = 0.75;
+
+export interface ScoreContext {
+  currentYear: number;
+  mood: Mood;
+  /** Keys of titles shown recently (from persisted history). */
+  recentKeys: Set<string>;
+}
+
+export function scoreTitle(title: Title, ctx: ScoreContext): number {
   const v = title.voteCount;
   const m = MIN_VOTES[title.mediaType];
   const R = title.voteAverage;
   let score = (v / (v + m)) * R + (m / (v + m)) * GLOBAL_MEAN;
-  if (title.fromDateBlend) score += DATE_BLEND_BONUS;
-  if (title.year && title.year >= currentYear - RECENCY_WINDOW_YEARS)
-    score += RECENCY_BONUS;
+  score += title.poolBonus;
+  if (title.year && title.year >= ctx.currentYear - RECENCY_WINDOW_YEARS)
+    score += RECENCY_BONUS[ctx.mood];
+  if (ctx.recentKeys.has(title.key)) score -= RECENTLY_SHOWN_PENALTY;
   return score;
 }

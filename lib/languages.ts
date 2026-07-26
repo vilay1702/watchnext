@@ -1,0 +1,21 @@
+/** Original-language filter options (ISO 639-1). null/absent = any. */
+export const LANGUAGES: { code: string; name: string }[] = [
+  { code: "en", name: "English" },
+  { code: "hi", name: "Hindi" },
+  { code: "ta", name: "Tamil" },
+  { code: "te", name: "Telugu" },
+  { code: "ml", name: "Malayalam" },
+  { code: "kn", name: "Kannada" },
+  { code: "bn", name: "Bengali" },
+  { code: "mr", name: "Marathi" },
+  { code: "pa", name: "Punjabi" },
+  { code: "ko", name: "Korean" },
+  { code: "ja", name: "Japanese" },
+  { code: "zh", name: "Chinese" },
+  { code: "es", name: "Spanish" },
+  { code: "fr", name: "French" },
+  { code: "de", name: "German" },
+  { code: "it", name: "Italian" },
+  { code: "pt", name: "Portuguese" },
+  { code: "tr", name: "Turkish" },
+];

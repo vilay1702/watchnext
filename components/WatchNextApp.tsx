@@ -5,6 +5,7 @@ import type {
   Answers,
   Excluded,
   HistoryRecord,
+  Prefs,
   RegionProviders,
   Title,
   TitleDetails,
@@ -25,6 +26,7 @@ import { MoodPicker } from "@/components/MoodPicker";
 import { ResultHero } from "@/components/ResultHero";
 import { BackupRow } from "@/components/BackupRow";
 import { HistoryPanel } from "@/components/HistoryPanel";
+import { PreferencesPanel } from "@/components/PreferencesPanel";
 
 type Phase = "picking" | "loading" | "results" | "error";
 
@@ -54,6 +56,14 @@ export function WatchNextApp() {
   const [history, setHistory] = useLocalStorage<HistoryRecord[]>(
     "wn:history:v1",
     [],
+  );
+  const [services, setServices] = useLocalStorage<number[]>(
+    "wn:services:v1",
+    [],
+  );
+  const [language, setLanguage] = useLocalStorage<string | null>(
+    "wn:lang:v1",
+    null,
   );
   const [detectedRegion, setDetectedRegion] = useState("US");
   useEffect(() => setDetectedRegion(detectRegion()), []);
@@ -116,7 +126,18 @@ export function WatchNextApp() {
       shownRef.current = new Set();
       blockedRef.current = new Set();
       try {
-        const built = await buildPool(forAnswers, excludedSet());
+        const prefs: Prefs = { region, providers: services, language };
+        // Shown in the last two weeks → de-prioritized, not excluded.
+        const twoWeeksAgo = Date.now() - 14 * 86_400_000;
+        const recentKeys = new Set(
+          history.filter((r) => r.at >= twoWeeksAgo).map((r) => r.key),
+        );
+        const built = await buildPool(
+          forAnswers,
+          excludedSet(),
+          prefs,
+          recentKeys,
+        );
         const p = await gatedPick(built.titles, forAnswers);
         if (seq !== requestSeq.current) return;
         setPool(built.titles);
@@ -138,7 +159,7 @@ export function WatchNextApp() {
         setPhase("error");
       }
     },
-    [excludedSet, gatedPick],
+    [excludedSet, gatedPick, region, services, language, history],
   );
 
   const start = useCallback(
@@ -297,6 +318,16 @@ export function WatchNextApp() {
     return (
       <div>
         <MoodPicker onComplete={start} />
+        <div className="mt-8">
+          <PreferencesPanel
+            region={region}
+            onRegionChange={setStoredRegion}
+            language={language}
+            onLanguageChange={setLanguage}
+            services={services}
+            onServicesChange={setServices}
+          />
+        </div>
         {historyPanel}
       </div>
     );

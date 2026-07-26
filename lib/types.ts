@@ -24,9 +24,26 @@ export interface Title {
   voteAverage: number;
   voteCount: number;
   genreIds: number[];
-  /** Came from the date-night blend query — gets a scoring bonus. */
-  fromDateBlend: boolean;
+  /** Score bonus from the pool query that found it (date blend, keyword
+      boost); when queries overlap, the highest bonus wins. */
+  poolBonus: number;
   score: number;
+}
+
+/** User preferences that shape the candidate pool. */
+export interface Prefs {
+  region: string;
+  /** TMDB provider IDs; non-empty = only titles streaming on these. */
+  providers: number[];
+  /** ISO 639-1 original-language filter; null = any. */
+  language: string | null;
+}
+
+/** A streaming service selectable in preferences. */
+export interface WatchProviderOption {
+  id: number;
+  name: string;
+  logoPath: string | null;
 }
 
 /** Lazily fetched per displayed title (discover omits these). */

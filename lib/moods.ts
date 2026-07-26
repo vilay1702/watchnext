@@ -1,4 +1,4 @@
-import type { Answers, MediaType, Mood } from "./types";
+import type { Answers, MediaType, Mood, Prefs } from "./types";
 import type { Params } from "./tmdb";
 
 /**
@@ -46,6 +46,45 @@ const T = {
 
 /** Never suggest non-bingeable TV formats: news, reality, soap, talk. */
 const TV_NEVER = "10763,10764,10766,10767";
+
+/**
+ * Keyword-boost queries per mood (TMDB keyword IDs, resolved 2026-07 via
+ * /search/keyword). These sharpen what genres can't: a keyword query's
+ * results join the pool with a score bonus — never a hard filter, so thin
+ * keyword coverage can't starve a mood.
+ */
+const MOOD_KEYWORDS: Record<Mood, string> = {
+  laugh: "275276|167541", // feelgood, buddy comedy
+  thrill: "10051|12565|275311", // heist, psychological thriller, plot twist
+  feel: "10683|156924", // coming of age, tearjerker
+  think: "275311|4379", // plot twist, time travel
+  escape: "161176|234213|4379", // space opera, sword & sorcery, time travel
+  scare: "3358|162846|256183", // haunted house, ghost, supernatural horror
+};
+const KEYWORD_BONUS = 0.25;
+const DATE_BLEND_BONUS = 0.3;
+
+/** Era buckets so the pool spans decades, not just what's trending. */
+const ERAS: [string, string][] = [
+  ["1995-01-01", "2012-12-31"],
+  ["2013-01-01", "2021-12-31"],
+];
+
+/**
+ * Family-night certification: US/PG-13 by default, but regional films
+ * rarely carry US certificates — for Indian-language preferences use
+ * India's own board (U/UA, verified working in discover 2026-07).
+ */
+const INDIAN_LANGS = new Set(["hi", "ta", "te", "ml", "kn", "bn", "mr", "pa"]);
+
+function familyCert(language: string | null | undefined): {
+  country: string;
+  lte: string;
+} {
+  return language && INDIAN_LANGS.has(language)
+    ? { country: "IN", lte: "UA" }
+    : { country: "US", lte: "PG-13" };
+}
 
 interface MoodRow {
   withGenres: string;
@@ -144,7 +183,8 @@ const TV_MOODS: Record<Mood, Omit<MoodRow, "primaryGenre">> = {
 
 export interface CompiledQuery {
   params: Params;
-  fromDateBlend: boolean;
+  /** Score bonus for titles this query contributes (0 for base queries). */
+  bonus: number;
 }
 
 export interface CompiledPlan {
@@ -152,7 +192,7 @@ export interface CompiledPlan {
   queries: CompiledQuery[];
 }
 
-export const MAX_RELAX_LEVEL = 3;
+export const MAX_RELAX_LEVEL = 4;
 
 function appendGenres(list: string, extra: string): string {
   const merged = new Set(
@@ -162,13 +202,18 @@ function appendGenres(list: string, extra: string): string {
 }
 
 /**
- * Answers → discover queries, at a relaxation level (0 = strict).
- * Relaxation is cumulative:
+ * Answers + preferences → discover queries, at a relaxation level
+ * (0 = strict). Relaxation is cumulative:
  *   1: quality floors lowered (avg −0.5, count halved)
  *   2: + runtime bounds widened ±20 min (movie modes)
- *   3: + floors lowered again and deeper popularity pages fetched
+ *   3: + streaming-service filter dropped
+ *   4: + floors lowered again and deeper popularity pages fetched
  */
-export function compileQueries(answers: Answers, relax = 0): CompiledPlan {
+export function compileQueries(
+  answers: Answers,
+  relax = 0,
+  prefs?: Prefs,
+): CompiledPlan {
   const media: MediaType = answers.time === "series" ? "tv" : "movie";
   const row = media === "movie" ? MOVIE_MOODS[answers.mood] : TV_MOODS[answers.mood];
 
@@ -177,11 +222,18 @@ export function compileQueries(answers: Answers, relax = 0): CompiledPlan {
   let voteCount = row.voteCount;
   let voteAvg = row.voteAvg;
 
+  // Non-English catalogs carry far fewer TMDB votes — lower the floors up
+  // front or a Hindi/Tamil preference would relax straight to the ladder.
+  if (prefs?.language && prefs.language !== "en") {
+    voteAvg -= 0.3;
+    voteCount = Math.floor(voteCount / 2);
+  }
+
   if (relax >= 1) {
     voteAvg -= 0.5;
     voteCount = Math.floor(voteCount / 2);
   }
-  if (relax >= 3) {
+  if (relax >= 4) {
     voteAvg -= 0.5;
     voteCount = Math.floor(voteCount / 2);
   }
@@ -192,6 +244,16 @@ export function compileQueries(answers: Answers, relax = 0): CompiledPlan {
     "vote_count.gte": voteCount,
     "vote_average.gte": Math.max(0, voteAvg),
   };
+
+  if (prefs?.language) base.with_original_language = prefs.language;
+
+  // Only titles streamable on the user's services (their explicit ask —
+  // dropped only at ladder step 3, when honesty beats strictness).
+  if (prefs && prefs.providers.length > 0 && relax < 3) {
+    base.with_watch_providers = prefs.providers.join("|");
+    base.watch_region = prefs.region;
+    base.with_watch_monetization_types = "flatrate";
+  }
 
   // Time → runtime bounds (movies only; discover/tv's runtime filter is
   // per-episode and not useful — series length is shown, not filtered).
@@ -208,8 +270,9 @@ export function compileQueries(answers: Answers, relax = 0): CompiledPlan {
   // Company → certification / exclusions
   if (answers.company === "family") {
     if (media === "movie") {
-      base.certification_country = "US";
-      base["certification.lte"] = "PG-13";
+      const cert = familyCert(prefs?.language);
+      base.certification_country = cert.country;
+      base["certification.lte"] = cert.lte;
       if (answers.mood === "scare") {
         // "Spooky, not scarring": PG-13 horror/mystery instead of banning it
         withGenres = `${M.horror}|${M.mystery}`;
@@ -242,9 +305,22 @@ export function compileQueries(answers: Answers, relax = 0): CompiledPlan {
     ...extra,
   });
 
+  const dateField =
+    media === "movie" ? "primary_release_date" : "first_air_date";
+
   const queries: CompiledQuery[] = [
-    { params: withParams({ sort_by: "popularity.desc", page: 1 }), fromDateBlend: false },
-    { params: withParams({ sort_by: "popularity.desc", page: 2 }), fromDateBlend: false },
+    { params: withParams({ sort_by: "popularity.desc", page: 1 }), bonus: 0 },
+    // Era buckets: what's trending is recency-skewed; these pull in the
+    // best of earlier decades so the pool spans eras.
+    ...ERAS.map(([gte, lte]) => ({
+      params: withParams({
+        sort_by: "popularity.desc",
+        page: 1,
+        [`${dateField}.gte`]: gte,
+        [`${dateField}.lte`]: lte,
+      }),
+      bonus: 0,
+    })),
     {
       // Acclaimed-classics injection: rating sort needs a high vote floor
       // or 10-vote obscurities dominate.
@@ -253,14 +329,23 @@ export function compileQueries(answers: Answers, relax = 0): CompiledPlan {
         page: 1,
         "vote_count.gte": media === "movie" ? 1000 : 500,
       }),
-      fromDateBlend: false,
+      bonus: 0,
+    },
+    {
+      // Keyword boost: sharper mood fit than genres can express.
+      params: withParams({
+        with_keywords: MOOD_KEYWORDS[answers.mood],
+        sort_by: "popularity.desc",
+        page: 1,
+      }),
+      bonus: KEYWORD_BONUS,
     },
   ];
 
-  if (relax >= 3) {
+  if (relax >= 4) {
     queries.push(
-      { params: withParams({ sort_by: "popularity.desc", page: 3 }), fromDateBlend: false },
-      { params: withParams({ sort_by: "popularity.desc", page: 4 }), fromDateBlend: false },
+      { params: withParams({ sort_by: "popularity.desc", page: 2 }), bonus: 0 },
+      { params: withParams({ sort_by: "popularity.desc", page: 3 }), bonus: 0 },
     );
   }
 
@@ -272,7 +357,7 @@ export function compileQueries(answers: Answers, relax = 0): CompiledPlan {
         sort_by: "popularity.desc",
         page: 1,
       }),
-      fromDateBlend: true,
+      bonus: DATE_BLEND_BONUS,
     });
   }
 

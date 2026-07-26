@@ -71,6 +71,19 @@ export const copy = {
   exhaustedBody:
     "Here are the best of them again — or start over and try a different vibe.",
 
+  // Preferences
+  preferencesTitle: "Preferences",
+  preferencesSummary: (n: number) =>
+    n === 0 ? "Any service, any language" : `${n} set`,
+  servicesLabel: "Only my streaming services",
+  servicesHint:
+    "Pick the services you pay for and every suggestion will be watchable on one of them.",
+  servicesLoading: "Loading services for your region…",
+  servicesError: "Couldn’t load services — try another region.",
+  languageLabel: "Original language",
+  languageAny: "Any language",
+  clearServices: "Clear services",
+
   // History
   historyTitle: "Recent picks",
   historyEmpty: "Your recent picks will show up here.",

@@ -34,8 +34,10 @@ export default function AboutPage() {
         <p>
           No AI, no engagement algorithm — just honest filters. Your three
           answers become a query against TMDB’s community-rated catalog: the
-          right genres for your mood, the right runtime for your evening, and
-          age-appropriate certifications for family nights. Everything below a
+          right genres and keywords for your mood, the right runtime for your
+          evening, age-appropriate certifications for family nights, and —
+          if you tell it your streaming services — only titles you can
+          actually watch. Everything below a
           quality floor of ratings and vote counts is thrown out, the rest is
           ranked, and your pick is drawn from the top shelf — so “Show me
           another” stays good instead of getting desperate.

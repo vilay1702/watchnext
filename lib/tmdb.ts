@@ -4,6 +4,7 @@ import type {
   RegionProviders,
   Title,
   TitleDetails,
+  WatchProviderOption,
 } from "./types";
 
 /**
@@ -123,7 +124,7 @@ function yearOf(date: string | undefined): number | null {
 export async function discover(
   media: MediaType,
   params: Params,
-  fromDateBlend = false,
+  poolBonus = 0,
 ): Promise<Title[]> {
   if (media === "movie") {
     const data = await tmdbFetch<DiscoverResponse<RawMovie>>(
@@ -142,7 +143,7 @@ export async function discover(
       voteAverage: r.vote_average,
       voteCount: r.vote_count,
       genreIds: r.genre_ids ?? [],
-      fromDateBlend,
+      poolBonus,
       score: 0,
     }));
   }
@@ -159,7 +160,7 @@ export async function discover(
     voteAverage: r.vote_average,
     voteCount: r.vote_count,
     genreIds: r.genre_ids ?? [],
-    fromDateBlend,
+    poolBonus,
     score: 0,
   }));
 }
@@ -235,6 +236,33 @@ export async function getWatchProviders(
     rent: mapProviders(r.rent),
     buy: mapProviders(r.buy),
   };
+}
+
+/**
+ * Streaming services available in a region, for the preferences picker.
+ * The movie provider list is a superset that covers TV fine; top entries
+ * by TMDB's per-region display priority.
+ */
+export async function getRegionProviderOptions(
+  region: string,
+  limit = 16,
+): Promise<WatchProviderOption[]> {
+  const d = await tmdbFetch<{
+    results: (RawProvider & {
+      display_priorities?: Record<string, number>;
+      display_priority?: number;
+    })[];
+  }>("/watch/providers/movie", { language: "en-US", watch_region: region });
+  return d.results
+    .map((p) => ({
+      id: p.provider_id,
+      name: p.provider_name,
+      logoPath: p.logo_path,
+      priority: p.display_priorities?.[region] ?? p.display_priority ?? 999,
+    }))
+    .sort((a, b) => a.priority - b.priority)
+    .slice(0, limit)
+    .map(({ id, name, logoPath }) => ({ id, name, logoPath }));
 }
 
 /* ---------- images ---------- */
