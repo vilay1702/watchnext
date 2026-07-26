@@ -53,6 +53,8 @@ export interface TitleDetails {
   episodes: number | null;
   /** US content rating for the family gate (tv only). */
   tvRating: string | null;
+  /** YouTube key of the best official trailer, if any. */
+  trailerKey: string | null;
 }
 
 export interface Provider {

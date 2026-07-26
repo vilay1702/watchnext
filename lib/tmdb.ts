@@ -167,25 +167,52 @@ export async function discover(
 
 /* ---------- lazy per-title details ---------- */
 
+interface RawVideo {
+  key: string;
+  site: string;
+  type: string;
+  official: boolean;
+}
+
+/** Best official YouTube trailer, falling back to any trailer, then teaser. */
+function pickTrailer(videos: { results?: RawVideo[] } | undefined): string | null {
+  const yt = (videos?.results ?? []).filter((v) => v.site === "YouTube");
+  const trailers = yt.filter((v) => v.type === "Trailer");
+  return (
+    (trailers.find((v) => v.official) ?? trailers[0])?.key ??
+    yt.find((v) => v.type === "Teaser")?.key ??
+    null
+  );
+}
+
 export async function getDetails(title: {
   mediaType: MediaType;
   id: number;
 }): Promise<TitleDetails> {
   if (title.mediaType === "movie") {
-    const d = await tmdbFetch<{ runtime: number | null }>(
-      `/movie/${title.id}`,
-    );
-    return { runtime: d.runtime ?? null, seasons: null, episodes: null, tvRating: null };
+    const d = await tmdbFetch<{
+      runtime: number | null;
+      videos?: { results?: RawVideo[] };
+    }>(`/movie/${title.id}`, { append_to_response: "videos" });
+    return {
+      runtime: d.runtime ?? null,
+      seasons: null,
+      episodes: null,
+      tvRating: null,
+      trailerKey: pickTrailer(d.videos),
+    };
   }
   const d = await tmdbFetch<{
     number_of_seasons: number | null;
     number_of_episodes: number | null;
-  }>(`/tv/${title.id}`);
+    videos?: { results?: RawVideo[] };
+  }>(`/tv/${title.id}`, { append_to_response: "videos" });
   return {
     runtime: null,
     seasons: d.number_of_seasons ?? null,
     episodes: d.number_of_episodes ?? null,
     tvRating: null,
+    trailerKey: pickTrailer(d.videos),
   };
 }
 
@@ -272,6 +299,14 @@ export function posterUrl(
   size: "w342" | "w500" = "w342",
 ): string | null {
   return path ? `${IMAGE_BASE}/${size}${path}` : null;
+}
+
+export function backdropUrl(path: string | null): string | null {
+  return path ? `${IMAGE_BASE}/w780${path}` : null;
+}
+
+export function trailerUrl(key: string): string {
+  return `https://www.youtube.com/watch?v=${key}`;
 }
 
 export function providerLogoUrl(path: string | null): string | null {

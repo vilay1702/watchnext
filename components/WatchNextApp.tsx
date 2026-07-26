@@ -44,6 +44,8 @@ export function WatchNextApp() {
   const [exhausted, setExhausted] = useState(false);
   const [errorKind, setErrorKind] = useState<"no-token" | "generic">("generic");
   const [loadingLine, setLoadingLine] = useState(0);
+  /** Which single answer is being edited from the results chips. */
+  const [editStep, setEditStep] = useState<0 | 1 | 2 | null>(null);
 
   const [excluded, setExcluded] = useLocalStorage<Excluded>("wn:excluded:v1", {
     seen: [],
@@ -65,6 +67,15 @@ export function WatchNextApp() {
   const [language, setLanguage] = useLocalStorage<string | null>(
     "wn:lang:v1",
     "en",
+  );
+  /** Last completed answers — powers the one-tap "same as last time". */
+  const [lastAnswers, setLastAnswers] = useLocalStorage<Answers | null>(
+    "wn:answers:v1",
+    null,
+  );
+  const [nudgeDismissed, setNudgeDismissed] = useLocalStorage<boolean>(
+    "wn:nudge:v1",
+    false,
   );
   const [detectedRegion, setDetectedRegion] = useState("US");
   useEffect(() => setDetectedRegion(detectRegion()), []);
@@ -166,10 +177,22 @@ export function WatchNextApp() {
   const start = useCallback(
     (a: Answers) => {
       setAnswers(a);
+      setLastAnswers(a);
+      setEditStep(null);
       void run(a);
     },
-    [run],
+    [run, setLastAnswers],
   );
+
+  // Rotate the loading lines so a slow fetch feels alive, not stuck.
+  useEffect(() => {
+    if (phase !== "loading") return;
+    const id = setInterval(
+      () => setLoadingLine((n) => (n + 1) % copy.loadingLines.length),
+      1600,
+    );
+    return () => clearInterval(id);
+  }, [phase]);
 
   const repick = useCallback(
     async (markShown?: string) => {
@@ -229,6 +252,7 @@ export function WatchNextApp() {
     setPicks(null);
     setPool([]);
     setExhausted(false);
+    setEditStep(null);
     setPhase("picking");
   }, []);
 
@@ -315,33 +339,73 @@ export function WatchNextApp() {
     </div>
   );
 
-  if (phase === "picking")
+  const preferencesPanel = (
+    <PreferencesPanel
+      region={region}
+      onRegionChange={setStoredRegion}
+      language={language}
+      onLanguageChange={setLanguage}
+      services={services}
+      onServicesChange={setServices}
+    />
+  );
+
+  if (phase === "picking") {
+    const editing = editStep !== null && answers !== null;
     return (
       <div>
-        <MoodPicker onComplete={start} />
-        <div className="mt-8">
-          <PreferencesPanel
-            region={region}
-            onRegionChange={setStoredRegion}
-            language={language}
-            onLanguageChange={setLanguage}
-            services={services}
-            onServicesChange={setServices}
-          />
-        </div>
+        {!editing && lastAnswers && (
+          <button
+            type="button"
+            onClick={() => start(lastAnswers)}
+            className="mb-5 flex w-full items-center justify-between gap-2 rounded-md border border-accent/40 bg-accent-soft px-4 py-3 text-left transition hover:border-accent focus-visible:outline-2 focus-visible:outline-accent active:scale-[0.99]"
+          >
+            <span className="text-small font-semibold text-accent">
+              ▶ {copy.sameAsLastTime}
+            </span>
+            <span className="text-small text-text-muted">
+              {copy.moods[lastAnswers.mood].emoji}{" "}
+              {copy.moods[lastAnswers.mood].label} ·{" "}
+              {copy.times[lastAnswers.time].label} ·{" "}
+              {copy.companies[lastAnswers.company].label}
+            </span>
+          </button>
+        )}
+        <MoodPicker
+          key={editing ? `edit-${editStep}` : "full"}
+          onComplete={start}
+          initial={editing ? answers : undefined}
+          startStep={editing ? editStep : 0}
+          editSingle={editing}
+        />
+        <div className="mt-8">{preferencesPanel}</div>
         {historyPanel}
       </div>
     );
+  }
 
   if (phase === "loading") {
+    // Skeleton in the result layout — spatial continuity into the reveal.
     return (
-      <div className="flex flex-col items-center gap-4 py-14" role="status">
-        <div aria-hidden="true" className="animate-pulse text-4xl">
-          🎬
+      <div role="status" aria-label={copy.loadingLines[loadingLine]}>
+        <div className="grid gap-5 rounded-lg border border-border p-4 sm:grid-cols-[minmax(0,180px)_1fr] sm:p-6">
+          <div className="mx-auto w-40 sm:w-full">
+            <div className="aspect-[2/3] animate-pulse rounded-md bg-border/60" />
+          </div>
+          <div className="min-w-0 space-y-3">
+            <div className="h-4 w-28 animate-pulse rounded-sm bg-border/60" />
+            <div className="h-7 w-3/5 animate-pulse rounded-sm bg-border/60" />
+            <div className="h-4 w-2/5 animate-pulse rounded-sm bg-border/60" />
+            <div className="space-y-2 pt-2">
+              <div className="h-3.5 w-full animate-pulse rounded-sm bg-border/50" />
+              <div className="h-3.5 w-11/12 animate-pulse rounded-sm bg-border/50" />
+              <div className="h-3.5 w-4/5 animate-pulse rounded-sm bg-border/50" />
+            </div>
+            <p className="pt-3 text-small text-text-muted" aria-live="polite">
+              {copy.loadingLines[loadingLine]}
+            </p>
+          </div>
         </div>
-        <p className="text-small text-text-muted">
-          {copy.loadingLines[loadingLine]}
-        </p>
       </div>
     );
   }
@@ -373,29 +437,51 @@ export function WatchNextApp() {
   }
 
   // results
+  const answerChips: { label: string; step: 0 | 1 | 2 }[] = answers
+    ? [
+        {
+          label: `${copy.moods[answers.mood].emoji} ${copy.moods[answers.mood].label}`,
+          step: 0,
+        },
+        { label: copy.times[answers.time].label, step: 1 },
+        { label: copy.companies[answers.company].label, step: 2 },
+      ]
+    : [];
+
   return (
     <div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-2 border-b border-border pb-4">
-        <p className="text-small text-text-muted">
-          {answers && (
-            <>
-              {copy.moods[answers.mood].emoji} {copy.moods[answers.mood].label}
-              {" · "}
-              {copy.times[answers.time].label}
-              {" · "}
-              {copy.companies[answers.company].label}
-            </>
-          )}
-        </p>
+        {/* Tappable answer chips — change one answer without starting over */}
+        <div className="flex flex-wrap items-center gap-2">
+          {answerChips.map((c) => (
+            <button
+              key={c.step}
+              type="button"
+              onClick={() => {
+                setEditStep(c.step);
+                setPhase("picking");
+              }}
+              aria-label={copy.changeAnswer(c.label)}
+              className="rounded-sm border border-border bg-surface px-2 py-1 text-small text-text-muted transition hover:border-accent/50 hover:text-accent focus-visible:outline-2 focus-visible:outline-accent"
+            >
+              {c.label} <span aria-hidden="true">▾</span>
+            </button>
+          ))}
+        </div>
         <Button variant="ghost" onClick={startOver}>
           {copy.startOver}
         </Button>
       </div>
 
       {exhausted && (
-        <div className="mb-5 rounded-md border border-border bg-accent-soft p-3">
-          <p className="text-small font-semibold">{copy.exhaustedTitle}</p>
-          <p className="text-small text-text-muted">{copy.exhaustedBody}</p>
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-accent-soft p-3">
+          <div>
+            <p className="text-small font-semibold">{copy.exhaustedTitle}</p>
+            <p className="text-small text-text-muted">{copy.exhaustedBody}</p>
+          </div>
+          <Button variant="primary" onClick={startOver}>
+            {copy.tryDifferentVibe}
+          </Button>
         </div>
       )}
 
@@ -403,6 +489,7 @@ export function WatchNextApp() {
         <>
           <ResultHero
             title={picks.hero}
+            answers={answers!}
             details={details[picks.hero.key]}
             providers={providers[`${picks.hero.key}:${region}`]}
             region={region}
@@ -411,7 +498,11 @@ export function WatchNextApp() {
             onSeen={() => exclude(picks.hero, "seen")}
             onDismiss={() => exclude(picks.hero, "dismissed")}
           />
-          <BackupRow backups={picks.backups} onPromote={promote} />
+          <BackupRow
+            backups={picks.backups}
+            heroGenreIds={picks.hero.genreIds}
+            onPromote={promote}
+          />
         </>
       ) : (
         <div className="py-8 text-center">
@@ -421,6 +512,19 @@ export function WatchNextApp() {
           </Button>
         </div>
       )}
+
+      {/* One-time nudge toward the services filter, shown where its value
+          is obvious — right after seeing where a pick streams. */}
+      {services.length === 0 && !nudgeDismissed && (
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-3">
+          <p className="text-small text-text-muted">{copy.servicesNudge}</p>
+          <Button variant="ghost" onClick={() => setNudgeDismissed(true)}>
+            {copy.dismissNudge}
+          </Button>
+        </div>
+      )}
+
+      <div className="mt-6">{preferencesPanel}</div>
 
       {historyPanel}
 

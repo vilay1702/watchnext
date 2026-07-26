@@ -3,11 +3,14 @@
 import { useState } from "react";
 import type { Answers, Company, Mood, TimeChoice } from "@/lib/types";
 import { copy } from "@/lib/copy";
-import { Button } from "@/components/ui/Button";
 
 /**
  * The whole input surface: three taps, no typing.
  * vibe → time → company, then hands the answers up.
+ *
+ * `editSingle` + `startStep` turn it into a one-step editor: the results
+ * screen's answer chips reopen just that step, keep the other answers,
+ * and complete immediately on selection.
  */
 
 const MOODS = Object.keys(copy.moods) as Mood[];
@@ -44,27 +47,63 @@ function OptionButton({
 
 export function MoodPicker({
   onComplete,
+  initial,
+  startStep = 0,
+  editSingle = false,
 }: {
   onComplete: (answers: Answers) => void;
+  initial?: Answers;
+  startStep?: 0 | 1 | 2;
+  editSingle?: boolean;
 }) {
-  const [step, setStep] = useState(0);
-  const [mood, setMood] = useState<Mood | null>(null);
-  const [time, setTime] = useState<TimeChoice | null>(null);
+  const [step, setStep] = useState<number>(startStep);
+  const [mood, setMood] = useState<Mood | null>(initial?.mood ?? null);
+  const [time, setTime] = useState<TimeChoice | null>(initial?.time ?? null);
+
+  // Breadcrumb of answered steps — progress you can see and tap back to.
+  const crumbs: { label: string; step: 0 | 1 }[] = [];
+  if (mood && step > 0)
+    crumbs.push({
+      label: `${copy.moods[mood].emoji} ${copy.moods[mood].label}`,
+      step: 0,
+    });
+  if (time && step > 1)
+    crumbs.push({
+      label: `${copy.times[time].emoji} ${copy.times[time].label}`,
+      step: 1,
+    });
+
+  const finish = (partial: Partial<Answers>) => {
+    const merged: Answers = {
+      mood: partial.mood ?? mood ?? initial!.mood,
+      time: partial.time ?? time ?? initial!.time,
+      company: partial.company ?? initial!.company,
+    };
+    onComplete(merged);
+  };
 
   return (
     <div className="animate-rise-in">
-      <div className="mb-5 flex items-center justify-between gap-4">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <h2 className="font-display text-h3 font-semibold">{STEPS[step]}</h2>
-        <div className="flex items-center gap-3">
-          <span className="text-small text-text-muted" aria-live="polite">
-            {step + 1} of 3
-          </span>
-          {step > 0 && (
-            <Button variant="ghost" onClick={() => setStep((s) => s - 1)}>
-              {copy.back}
-            </Button>
-          )}
-        </div>
+        {!editSingle && (
+          <div className="flex flex-wrap items-center gap-2">
+            {crumbs.map((c) => (
+              <button
+                key={c.step}
+                type="button"
+                onClick={() => setStep(c.step)}
+                aria-label={copy.changeAnswer(c.label)}
+                className="rounded-sm border border-border bg-surface px-2 py-1 text-small text-text-muted transition hover:border-accent/50 hover:text-accent focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                {c.label}
+              </button>
+            ))}
+            <span className="text-small text-text-muted" aria-live="polite">
+              {step + 1} of 3
+            </span>
+          </div>
+        )}
       </div>
 
       {step === 0 && (
@@ -76,7 +115,8 @@ export function MoodPicker({
               label={copy.moods[m].label}
               onClick={() => {
                 setMood(m);
-                setStep(1);
+                if (editSingle) finish({ mood: m });
+                else setStep(1);
               }}
             />
           ))}
@@ -93,7 +133,8 @@ export function MoodPicker({
               hint={copy.times[t].hint}
               onClick={() => {
                 setTime(t);
-                setStep(2);
+                if (editSingle) finish({ time: t });
+                else setStep(2);
               }}
             />
           ))}
@@ -108,7 +149,8 @@ export function MoodPicker({
               emoji={copy.companies[c].emoji}
               label={copy.companies[c].label}
               onClick={() => {
-                if (mood && time) onComplete({ mood, time, company: c });
+                if (editSingle) finish({ company: c });
+                else if (mood && time) onComplete({ mood, time, company: c });
               }}
             />
           ))}

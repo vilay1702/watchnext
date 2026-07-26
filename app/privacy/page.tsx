@@ -30,9 +30,9 @@ export default function PrivacyPage() {
           {TOOL_NAME} saves a few things in your browser’s local storage:
           titles you’ve marked “Seen it” or “Not interested” (so they’re never
           suggested again), your recent picks (so you can find that movie
-          from last week), your streaming region, your chosen streaming
-          services and language preference, and your light-or-dark theme
-          choice.
+          from last week), your last answers (for the one-tap repeat), your
+          streaming region, your chosen streaming services and language
+          preference, and your light-or-dark theme choice.
         </p>
         <p>
           That data lives only on your device. It’s not sent to a server, and

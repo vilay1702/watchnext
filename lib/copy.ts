@@ -14,6 +14,8 @@ export const copy = {
   stepCompany: "Who’s watching?",
   back: "Go back",
   startOver: "Start over",
+  sameAsLastTime: "Same vibe as last time",
+  changeAnswer: (step: string) => `Change: ${step}`,
 
   moods: {
     laugh: { emoji: "😂", label: "Make me laugh" },
@@ -37,11 +39,23 @@ export const copy = {
 
   // Results
   heroKicker: "Tonight’s pick",
-  backupsHeading: "Or maybe…",
+  backupsHeading: "Or a different direction…",
   showAnother: "Show me another",
   seenIt: "Seen it",
   notInterested: "Not interested",
+  exclusionHint:
+    "Either way, we’ll never suggest this title again.",
+  watchTrailer: "Watch trailer",
+  matchedTo: "Matched to",
+  ratingsCount: (n: number) =>
+    n >= 1000 ? `${Math.round(n / 1000)}k ratings` : `${n} ratings`,
+  plotMore: "Read more",
+  plotLess: "Show less",
   pickAgain: "Pick again",
+  tryDifferentVibe: "Try a different vibe",
+  servicesNudge:
+    "Tip: pick your streaming services in Preferences below and every suggestion will be watchable.",
+  dismissNudge: "Got it",
   seasons: (n: number) => (n === 1 ? "1 season" : `${n} seasons`),
   episodes: (n: number) => `${n} episodes`,
   runtime: (mins: number) =>
