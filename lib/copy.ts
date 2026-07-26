@@ -31,6 +31,7 @@ export const copy = {
   companies: {
     solo: { emoji: "🛋️", label: "Just me" },
     date: { emoji: "💜", label: "Date night" },
+    friends: { emoji: "🍕", label: "Friends over" },
     family: { emoji: "👨‍👩‍👧", label: "The whole family" },
   },
 

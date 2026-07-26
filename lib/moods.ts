@@ -155,7 +155,10 @@ export interface CompiledPlan {
 export const MAX_RELAX_LEVEL = 3;
 
 function appendGenres(list: string, extra: string): string {
-  return list ? `${list},${extra}` : extra;
+  const merged = new Set(
+    [...list.split(","), ...extra.split(",")].filter(Boolean),
+  );
+  return [...merged].join(",");
 }
 
 /**
@@ -219,6 +222,17 @@ export function compileQueries(answers: Answers, relax = 0): CompiledPlan {
   }
   if (answers.company === "date" && media === "movie") {
     withoutGenres = appendGenres(withoutGenres, `${M.animation},${M.family}`);
+  }
+  if (answers.company === "friends") {
+    // Group watching wants crowd-pleasers: double the vote floor so picks
+    // are titles everyone's heard of, and skip romance/documentaries.
+    base["vote_count.gte"] = voteCount * 2;
+    withoutGenres = appendGenres(
+      withoutGenres,
+      media === "movie"
+        ? `${M.romance},${M.documentary}`
+        : `${T.kids},${T.documentary}`,
+    );
   }
 
   const withParams = (extra: Params): Params => ({

@@ -4,7 +4,7 @@
 
 Pick your **vibe** (laugh, thrill, feel, think, escape, scare), your **time**
 (a quick movie, a proper movie, or a series to binge), and **who’s watching**
-(solo, date night, the whole family). WatchNext hands you a pick worth
+(solo, date night, friends over, the whole family). WatchNext hands you a pick worth
 watching — poster, rating, synopsis, and where it’s streaming in your region.
 
 No signup. No app to install. No endless scrolling.

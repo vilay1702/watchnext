@@ -1,6 +1,6 @@
 export type Mood = "laugh" | "thrill" | "feel" | "think" | "escape" | "scare";
 export type TimeChoice = "quick" | "long" | "series";
-export type Company = "solo" | "date" | "family";
+export type Company = "solo" | "date" | "friends" | "family";
 
 export interface Answers {
   mood: Mood;
