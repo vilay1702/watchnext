@@ -14,17 +14,20 @@ No signup. No app to install. No endless scrolling.
 No AI and no engagement algorithm — just honest, deterministic filters over
 [TMDB](https://www.themoviedb.org/)’s community-rated catalog:
 
-- Your mood maps to the right genres (and rules out the wrong ones).
+- Your mood maps to genres and keywords (and rules out the wrong ones).
 - Your time maps to runtime bounds, or switches to series.
-- Family night filters to PG-13 certifications and drops TV-MA shows.
-- Everything below a quality floor of ratings and vote counts is discarded;
-  the rest is ranked with an IMDb-style weighted score, and your pick is
-  drawn from the top shelf — so “Show me another” stays good.
+- Family night filters to kid-safe certifications and drops TV-MA shows.
+- Tell it which streaming services you pay for, and it only suggests
+  things you can actually press play on.
+- Anything with shaky ratings is discarded. The rest is ranked with an
+  IMDb-style weighted score, and your pick is drawn from the top shelf,
+  so “Show me another” stays good.
 
 Titles you mark **Seen it** or **Not interested** are remembered in your
-browser and never suggested again. If the filters run dry, they relax one
-honest step at a time — and if you’ve truly been through the whole
-shortlist, WatchNext says so instead of repeating itself silently.
+browser and never suggested again — nothing else is ever held back. If the
+filters run dry, they loosen a step at a time, and when you’ve truly been
+through the whole shortlist, WatchNext says so instead of quietly
+repeating itself.
 
 ## Privacy
 

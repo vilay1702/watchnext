@@ -32,19 +32,20 @@ export default function AboutPage() {
 
       <StaticSection heading="How it picks">
         <p>
-          No AI, no engagement algorithm — just honest filters. Your three
-          answers become a query against TMDB’s community-rated catalog: the
-          right genres and keywords for your mood, the right runtime for your
-          evening, age-appropriate certifications for family nights, and —
-          if you tell it your streaming services — only titles you can
-          actually watch. Everything below a
-          quality floor of ratings and vote counts is thrown out, the rest is
-          ranked, and your pick is drawn from the top shelf — so “Show me
-          another” stays good instead of getting desperate.
+          There’s no AI here, and no engagement algorithm. Your three answers
+          turn into plain filters on TMDB’s catalog: comedies if you want to
+          laugh, something under two hours if that’s all you’ve got, kid-safe
+          certificates on family night. Tell it which streaming services you
+          pay for and it only suggests things you can actually press play on.
         </p>
         <p>
-          Titles you mark “Seen it” or “Not interested” are remembered in your
-          browser and never suggested again.
+          Anything with shaky ratings gets thrown out. The rest is ranked,
+          and your pick comes from the top shelf — so “Show me another”
+          stays good instead of getting desperate.
+        </p>
+        <p>
+          Titles you mark “Seen it” or “Not interested” stay in your
+          browser’s memory and never come back.
         </p>
       </StaticSection>
 

@@ -20,14 +20,9 @@ const RECENCY_BONUS: Record<Mood, number> = {
 };
 const RECENCY_WINDOW_YEARS = 3;
 
-/** Shown within the last two weeks — de-prioritized, never excluded. */
-const RECENTLY_SHOWN_PENALTY = 0.75;
-
 export interface ScoreContext {
   currentYear: number;
   mood: Mood;
-  /** Keys of titles shown recently (from persisted history). */
-  recentKeys: Set<string>;
 }
 
 export function scoreTitle(title: Title, ctx: ScoreContext): number {
@@ -38,6 +33,5 @@ export function scoreTitle(title: Title, ctx: ScoreContext): number {
   score += title.poolBonus;
   if (title.year && title.year >= ctx.currentYear - RECENCY_WINDOW_YEARS)
     score += RECENCY_BONUS[ctx.mood];
-  if (ctx.recentKeys.has(title.key)) score -= RECENTLY_SHOWN_PENALTY;
   return score;
 }

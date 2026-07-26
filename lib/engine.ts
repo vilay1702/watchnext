@@ -24,19 +24,17 @@ export interface BuiltPool {
 /**
  * Fetch, dedupe, and score the candidate pool for a set of answers,
  * walking the relaxation ladder until enough selectable titles exist.
- * `recentKeys` (titles shown in the last two weeks) are de-prioritized
- * in scoring, never excluded.
+ * Only titles the user explicitly excluded ("Seen it" / "Not interested")
+ * are filtered out — nothing else is ever held back.
  */
 export async function buildPool(
   answers: Answers,
   excluded: Set<string>,
   prefs: Prefs,
-  recentKeys: Set<string>,
 ): Promise<BuiltPool> {
   const ctx: ScoreContext = {
     currentYear: new Date().getFullYear(),
     mood: answers.mood,
-    recentKeys,
   };
   const byKey = new Map<string, Title>();
 

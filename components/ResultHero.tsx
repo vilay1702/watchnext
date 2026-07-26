@@ -46,7 +46,6 @@ export function ResultHero({
   providers,
   region,
   onRegionChange,
-  onShowAnother,
   onSeen,
   onDismiss,
 }: {
@@ -56,7 +55,6 @@ export function ResultHero({
   providers: RegionProviders | null | undefined;
   region: string;
   onRegionChange: (region: string) => void;
-  onShowAnother: () => void;
   onSeen: () => void;
   onDismiss: () => void;
 }) {
@@ -149,13 +147,6 @@ export function ResultHero({
 
             <div className="pt-1">
               <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                <Button
-                  variant="primary"
-                  onClick={onShowAnother}
-                  className="w-full sm:w-auto"
-                >
-                  {copy.showAnother}
-                </Button>
                 {details?.trailerKey && (
                   <a
                     href={trailerUrl(details.trailerKey)}

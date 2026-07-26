@@ -6,7 +6,7 @@
 export const copy = {
   // Privacy line (shown under every tool workspace)
   privacy:
-    "Runs in your browser — nothing about you is uploaded. Titles come straight from TMDB.",
+    "Everything runs in your browser and nothing about you is uploaded. The titles come straight from TMDB.",
 
   // Mood picker steps
   stepVibe: "What’s the vibe tonight?",

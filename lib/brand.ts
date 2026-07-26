@@ -44,12 +44,12 @@ export const PAGE_TITLE =
  * The visible on-page tagline stays TOOL_DESCRIPTION.
  */
 export const META_DESCRIPTION =
-  "Can't decide what to watch? Tap your mood, your time, and who's watching — get a great movie or web series pick with where to stream it. No signup, no endless scrolling.";
+  "Can't decide what to watch? Tap your mood, your time, and who's watching. You'll get a great movie or web series pick and where to stream it. No signup, no endless scrolling.";
 
 /** Exactly one H1 per page — the tool's keyword-targeted description (§4). */
 export const TOOL_H1 = "Movie & web series picker";
 export const TOOL_DESCRIPTION =
-  "Three taps — vibe, time, company — and get a pick worth watching, with where to stream it. No signup, no scrolling.";
+  "Three quick taps and you've got tonight's watch, plus where it streams. No signup, no endless scrolling.";
 
 /**
  * Raw palette values for surfaces CSS variables can't reach

@@ -24,9 +24,9 @@ const JSON_LD = {
 };
 
 const HOW_IT_WORKS = [
-  "Tap your vibe, your time, and who’s watching — three taps, no typing, no scrolling.",
-  "Your answers become honest filters on TMDB’s community-rated catalog: right genres, right runtime, right certification. Only titles above a quality floor make the shortlist.",
-  "Not feeling the pick? “Show me another” never repeats itself. Mark “Seen it” and a title is never suggested again.",
+  "Tap your vibe, how much time you’ve got, and who’s watching. That’s the whole form — no typing.",
+  "Your taps become plain filters on TMDB’s catalog. Anything with shaky ratings gets thrown out, and what’s left is ranked. No algorithm guessing what keeps you hooked.",
+  "Not feeling it? Ask for another — you won’t see the same pick twice in a night. Mark something “Seen it” and it’s gone for good.",
 ];
 
 export default function Home() {

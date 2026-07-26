@@ -139,17 +139,7 @@ export function WatchNextApp() {
       blockedRef.current = new Set();
       try {
         const prefs: Prefs = { region, providers: services, language };
-        // Shown in the last two weeks → de-prioritized, not excluded.
-        const twoWeeksAgo = Date.now() - 14 * 86_400_000;
-        const recentKeys = new Set(
-          history.filter((r) => r.at >= twoWeeksAgo).map((r) => r.key),
-        );
-        const built = await buildPool(
-          forAnswers,
-          excludedSet(),
-          prefs,
-          recentKeys,
-        );
+        const built = await buildPool(forAnswers, excludedSet(), prefs);
         const p = await gatedPick(built.titles, forAnswers);
         if (seq !== requestSeq.current) return;
         setPool(built.titles);
@@ -171,7 +161,7 @@ export function WatchNextApp() {
         setPhase("error");
       }
     },
-    [excludedSet, gatedPick, region, services, language, history],
+    [excludedSet, gatedPick, region, services, language],
   );
 
   const start = useCallback(
@@ -494,7 +484,6 @@ export function WatchNextApp() {
             providers={providers[`${picks.hero.key}:${region}`]}
             region={region}
             onRegionChange={setStoredRegion}
-            onShowAnother={() => void repick(picks.hero.key)}
             onSeen={() => exclude(picks.hero, "seen")}
             onDismiss={() => exclude(picks.hero, "dismissed")}
           />
@@ -503,6 +492,16 @@ export function WatchNextApp() {
             heroGenreIds={picks.hero.genreIds}
             onPromote={promote}
           />
+          {/* Below the backups so nobody re-rolls without seeing them */}
+          <div className="mt-6 flex justify-center">
+            <Button
+              variant="primary"
+              onClick={() => void repick(picks.hero.key)}
+              className="w-full px-8 sm:w-auto"
+            >
+              {copy.showAnother}
+            </Button>
+          </div>
         </>
       ) : (
         <div className="py-8 text-center">
