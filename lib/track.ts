@@ -25,6 +25,10 @@ function send(payload: Record<string, unknown>): void {
       const debug = new URLSearchParams(location.search).get("pulse_debug");
       if (debug === null) return;
       url = `http://localhost:${/^\d+$/.test(debug) ? debug : "3000"}/api/i`;
+    } else if (!host.endsWith("vilaybende.com")) {
+      // Anywhere that is not the production domain (LAN-IP dev servers,
+      // file:// builds, previews) never sends.
+      return;
     }
 
     // JSON in a text/plain Blob keeps sendBeacon a CORS simple request
