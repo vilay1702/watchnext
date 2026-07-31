@@ -34,7 +34,7 @@ repeating itself.
 Everything runs in your browser. Your answers, your seen-list, and your
 recent picks are stored locally and never uploaded. Your browser talks directly to TMDB’s public API
 to fetch titles — those requests carry your chosen filters, never your
-identity. No accounts, no trackers, no cookies.
+identity. No accounts, no third-party trackers, no cookies — just anonymous, cookieless usage counts on our own analytics (DNT respected).
 
 This product uses the TMDB API but is not endorsed or certified by TMDB.
 Streaming availability data by JustWatch (via TMDB).

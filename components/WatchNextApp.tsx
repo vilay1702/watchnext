@@ -18,6 +18,7 @@ import {
   TmdbError,
 } from "@/lib/tmdb";
 import { buildPool, pickTitles, type Picks } from "@/lib/engine";
+import { track } from "@/lib/track";
 import { detectRegion } from "@/lib/region";
 import { useLocalStorage } from "@/lib/useLocalStorage";
 import { copy } from "@/lib/copy";
@@ -252,6 +253,7 @@ export function WatchNextApp() {
   useEffect(() => {
     if (!picks) return;
     const h = picks.hero;
+    track("pick_shown");
     setHistory((prev) => {
       if (prev[0]?.key === h.key) return prev;
       return [

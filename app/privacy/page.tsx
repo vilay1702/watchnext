@@ -50,10 +50,14 @@ export default function PrivacyPage() {
         </p>
       </StaticSection>
 
-      <StaticSection heading="No accounts, no trackers">
+      <StaticSection heading="No accounts, no third-party trackers">
         <p>
-          There’s nothing to sign up for, and we don’t use analytics trackers,
-          advertising pixels, or cookies.
+          There’s nothing to sign up for, and no third-party trackers,
+          advertising pixels, or cookies. We count anonymous usage on our
+          own self-hosted analytics: which pages are visited and which
+          tools are used. No cookies are set, your IP address is never
+          stored, nothing identifies you personally, and if your browser
+          sends Do Not Track we don’t count you at all.
         </p>
       </StaticSection>
 
