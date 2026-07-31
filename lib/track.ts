@@ -12,6 +12,25 @@ const ENDPOINT = "https://dash.vilaybende.com/api/i";
 /** The ONLY line that differs between the family repos. */
 const TOOL = "watchnext";
 
+/**
+ * Persistent anonymous visitor id — lets the dashboard recognize a
+ * returning browser. Random UUID, says nothing about the person;
+ * clearing site data removes it. Documented on /privacy.
+ */
+function visitorId(): string | undefined {
+  try {
+    const key = "pulse:id:v1";
+    let id = localStorage.getItem(key);
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem(key, id);
+    }
+    return id;
+  } catch {
+    return undefined; // storage unavailable — server falls back to a hash
+  }
+}
+
 function send(payload: Record<string, unknown>): void {
   try {
     const nav = navigator as Navigator & { globalPrivacyControl?: boolean };
@@ -33,7 +52,7 @@ function send(payload: Record<string, unknown>): void {
 
     // JSON in a text/plain Blob keeps sendBeacon a CORS simple request
     // (no preflight); the server parses the body regardless of type.
-    const body = JSON.stringify({ tool: TOOL, ...payload });
+    const body = JSON.stringify({ tool: TOOL, id: visitorId(), ...payload });
     const beacon =
       typeof navigator.sendBeacon === "function" &&
       navigator.sendBeacon(url, new Blob([body], { type: "text/plain" }));
