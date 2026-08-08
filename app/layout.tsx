@@ -68,21 +68,22 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#FAFAF9" },
-    { media: "(prefers-color-scheme: dark)", color: "#0C0A09" },
-  ],
+  // Dark is the site default regardless of system preference, so the
+  // browser chrome color matches it (media-query values would follow the
+  // system and clash with a dark page on light-mode devices).
+  themeColor: "#0C0A09",
   width: "device-width",
   initialScale: 1,
 };
 
 /**
- * Runs before first paint so a stored dark preference never flashes light.
- * Stored choice wins; absent means "follow the system".
+ * Runs before first paint so the dark default never flashes light.
+ * Dark is the default: light only when the visitor explicitly chose it
+ * with the toggle (the system preference is not consulted).
  */
-const themeInitScript = `try{var t=localStorage.getItem(${JSON.stringify(
+const themeInitScript = `var t=null;try{t=localStorage.getItem(${JSON.stringify(
   THEME_STORAGE_KEY,
-)});if(t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark")}catch(e){}`;
+)})}catch(e){}if(t!=="light")document.documentElement.classList.add("dark")`;
 
 export default function RootLayout({
   children,
